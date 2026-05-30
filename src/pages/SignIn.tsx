@@ -76,7 +76,6 @@ export default function SignIn() {
               href={getAuthUrl()}
               className={[
                 'flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-white transition-colors',
-                'bg-slate-700 cursor-not-allowed opacity-50',
                 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700',
               ].join(' ')}
             >

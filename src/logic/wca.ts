@@ -1,7 +1,7 @@
 import type { WCAUser, Competition, WCIF } from "./types";
 
 const WCA_ORIGIN = "https://www.worldcubeassociation.org";
-export const WCA_CLIENT_ID = "Tlc3J-Nnekh6-KCgOlq2HTU5SkUTVcXHjhfoyVEEUQ";
+export const WCA_CLIENT_ID = "-Tlc3J-Nnekh6-KCgOlq2HTU5SkUTVcXHjhfoyVEEUQ";
 const API_BASE = `${WCA_ORIGIN}/api/v0`;
 
 export function getAuthUrl(): string {

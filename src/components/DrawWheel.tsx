@@ -13,7 +13,15 @@ const TEXT_R = R - 80;   // radial distance at which ID labels are drawn
 const FADE = 130;        // left/right gradient fade width in px
 
 function easeOut(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
+  // 25% of time: constant speed; 75%: power-5 ease-out for a long slow-down tail
+  // frac=0.625 chosen so velocity is continuous at the boundary
+  const split = 0.25;
+  const frac  = 0.625;
+  if (t < split) {
+    return frac * (t / split);
+  }
+  const s = (t - split) / (1 - split);
+  return frac + (1 - frac) * (1 - Math.pow(1 - s, 5));
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -189,10 +197,10 @@ export default function DrawWheel({ candidates, drawTrigger, onComplete }: DrawW
     const segAngle  = (2 * Math.PI) / n;
     const baseAngle = -Math.PI / 2 - (winnerIdx * segAngle + segAngle / 2);
     const norm      = ((baseAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const totalSpin = (8 + Math.floor(Math.random() * 5)) * 2 * Math.PI + norm;
+    const totalSpin = 2 * 2 * Math.PI + norm;
 
     const startRot  = rotRef.current;
-    const duration  = 5500;
+    const duration  = 9000;
     const startTime = performance.now();
 
     function animate(now: number) {
