@@ -26,6 +26,7 @@ export default function Giveaway() {
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(0);
+  const [resultThreshold, setResultThreshold] = useState('');
 
   const [winners, setWinners] = useState<Winner[]>([]);
   const [settings, setSettings] = useState<GiveawaySettings>({
@@ -75,15 +76,30 @@ export default function Giveaway() {
     } else if (filterMode === 'round' && selectedEvent) {
       const round = selectedEvent.rounds[selectedRoundIndex];
       if (round && round.results.length > 0) {
-        const ids = new Set(round.results.map((r) => r.personId));
-        pool = pool.filter((p) => ids.has(p.registrantId));
+        const isAvgBased = round.format === 'a' || round.format === 'm';
+        const thresholdCs = resultThreshold.trim() !== ''
+          ? Math.round(parseFloat(resultThreshold) * 100)
+          : null;
+        const eligibleIds = new Set(
+          round.results
+            .filter((r) => {
+              if (thresholdCs === null) return true;
+              if (isAvgBased) {
+                // include if: no valid average (competed but DNFed) OR average meets threshold
+                return r.average <= 0 || r.average >= thresholdCs;
+              }
+              return r.best > 0 && r.best <= thresholdCs;
+            })
+            .map((r) => r.personId)
+        );
+        pool = pool.filter((p) => eligibleIds.has(p.registrantId));
       } else {
         pool = [];
       }
     }
 
     return pool.filter((p) => !winnerIds.has(p.registrantId));
-  }, [acceptedPersons, filterMode, selectedEventId, selectedEvent, selectedRoundIndex, winnerIds]);
+  }, [acceptedPersons, filterMode, selectedEventId, selectedEvent, selectedRoundIndex, resultThreshold, winnerIds]);
 
   function handleDraw() {
     if (filteredCandidates.length === 0 || isDrawing) return;
@@ -305,6 +321,23 @@ export default function Giveaway() {
                       ))}
                     </select>
                   )}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-slate-500">
+                      {(() => {
+                        const fmt = selectedEvent?.rounds[selectedRoundIndex]?.format ?? '';
+                        return (fmt === 'a' || fmt === 'm') ? 'Average ≥' : 'Best single ≤';
+                      })()} (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={resultThreshold}
+                      onChange={(e) => setResultThreshold(e.target.value)}
+                      placeholder="e.g. 25.00"
+                      className="px-2 py-1.5 text-sm rounded-lg bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
                 </div>
               )}
             </div>
