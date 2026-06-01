@@ -71,7 +71,9 @@ export default function Giveaway() {
   const filteredCandidates = useMemo(() => {
     let pool = acceptedPersons;
 
-    if (filterMode === 'event' && selectedEventId) {
+    if (filterMode === 'newcomer') {
+      pool = pool.filter((p) => !p.wcaId);
+    } else if (filterMode === 'event' && selectedEventId) {
       pool = pool.filter((p) => p.registration?.eventIds.includes(selectedEventId));
     } else if (filterMode === 'round' && selectedEvent) {
       const round = selectedEvent.rounds[selectedRoundIndex];
@@ -257,6 +259,16 @@ export default function Giveaway() {
                 className="accent-blue-500"
               />
               <span className="text-sm text-slate-200">All accepted</span>
+            </label>
+
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="radio" name="filter" value="newcomer"
+                checked={filterMode === 'newcomer'}
+                onChange={() => setFilterMode('newcomer')}
+                className="accent-blue-500"
+              />
+              <span className="text-sm text-slate-200">Newcomers only</span>
             </label>
 
             <div className="flex flex-col gap-2">

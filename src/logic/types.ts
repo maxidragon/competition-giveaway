@@ -73,4 +73,4 @@ export interface GiveawaySettings {
   giveawayLabel: string;
 }
 
-export type FilterMode = 'all' | 'event' | 'round';
+export type FilterMode = 'all' | 'newcomer' | 'event' | 'round';

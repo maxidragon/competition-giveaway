@@ -4,12 +4,12 @@ import type { Person } from '../logic/types';
 // Strip view: wheel centre is off-screen below the canvas.
 // Only the top arc of the wheel is visible — like the top of a roulette wheel.
 const CW = 700;          // canvas width
-const CH = 260;          // canvas height
+const CH = 400;          // canvas height
 const R  = 1200;         // wheel radius (large → flat, more segments visible)
 const WX = CW / 2;       // wheel centre x
 const WY = R + 16;       // wheel centre y (off-screen; rim appears at y ≈ 16)
 const RIM_Y = WY - R;    // y-coordinate of the outer rim on canvas (= 16)
-const TEXT_R = R - 80;   // radial distance at which ID labels are drawn
+const TEXT_R = R - 192;  // radial distance at which labels are drawn (centres text in visible strip)
 const FADE = 130;        // left/right gradient fade width in px
 
 function easeOut(t: number): number {
@@ -49,7 +49,7 @@ function drawFrame(
   const n = segs.length;
   const segAngle = (2 * Math.PI) / n;
   // Font scales with arc cell width at the rim; clamped for legibility
-  const fontSize = Math.max(10, Math.min(22, Math.floor(R * segAngle * 0.22)));
+  const fontSize = Math.max(14, Math.min(32, Math.floor(R * segAngle * 0.40)));
 
   ctx.clearRect(0, 0, CW, CH);
   ctx.fillStyle = '#0f172a';
@@ -102,12 +102,14 @@ function drawFrame(
     const isW = highlight && i === winnerIdx;
     ctx.save();
     ctx.translate(tx, ty);
-    ctx.rotate(mid + Math.PI / 2); // tangential → text curves with wheel
+    ctx.rotate(mid + Math.PI); // radial → text runs vertically (rim → centre)
     ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = isW ? '#bbf7d0' : '#e2e8f0';
-    ctx.fillText(`#${segs[i].registrantId}`, 0, 0);
+    const maxNameW = CH - RIM_Y - 40;
+    const displayName = segs[i].name.replace(/\s*\(.*?\)\s*/g, '').trim();
+    ctx.fillText(displayName, 0, 0, maxNameW);
     ctx.restore();
   }
 
@@ -247,8 +249,8 @@ export default function DrawWheel({ candidates, drawTrigger, onComplete }: DrawW
       />
       {currentWinner && (
         <div className="animate-winner-pop w-full max-w-sm px-6 py-4 rounded-2xl border-2 border-green-500 bg-green-950/50 text-center">
-          <div className="text-4xl font-black text-green-300">#{currentWinner.registrantId}</div>
-          <div className="text-xl font-semibold text-green-200 mt-1">{currentWinner.name}</div>
+          <div className="text-4xl font-black text-green-300">{currentWinner.name}</div>
+          <div className="text-sm text-green-600 mt-1">#{currentWinner.registrantId}</div>
           <div className="text-green-500 text-xs mt-2 uppercase tracking-widest font-semibold">Winner</div>
         </div>
       )}
