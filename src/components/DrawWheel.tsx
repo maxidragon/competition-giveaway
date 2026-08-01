@@ -197,11 +197,10 @@ export default function DrawWheel({ candidates, drawTrigger, onComplete }: DrawW
 
     const n         = segs.length;
     const segAngle  = (2 * Math.PI) / n;
-    const baseAngle = -Math.PI / 2 - (winnerIdx * segAngle + segAngle / 2);
-    const norm      = ((baseAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const totalSpin = 2 * 2 * Math.PI + norm;
-
     const startRot  = rotRef.current;
+    const baseAngle = -Math.PI / 2 - (winnerIdx * segAngle + segAngle / 2);
+    const diff      = ((baseAngle - startRot) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    const totalSpin = 2 * 2 * Math.PI + diff;
     const duration  = 9000;
     const startTime = performance.now();
 
