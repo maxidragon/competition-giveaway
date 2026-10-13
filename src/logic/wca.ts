@@ -37,11 +37,24 @@ export async function getMyCompetitions(token: string): Promise<Competition[]> {
   );
 }
 
+// Pinned to the major version: the unversioned endpoint serves the deprecated
+// v1, and `latest` will move to the next major version.
+const WCIF_MAJOR_VERSION = 2;
+
 export async function getWCIF(
   competitionId: string,
   token: string,
 ): Promise<WCIF> {
-  return apiFetch<WCIF>(`/competitions/${competitionId}/wcif`, token);
+  const wcif = await apiFetch<WCIF>(
+    `/competitions/${competitionId}/wcif/version/${WCIF_MAJOR_VERSION}`,
+    token,
+  );
+  if (!wcif.formatVersion?.startsWith(`${WCIF_MAJOR_VERSION}.`)) {
+    throw new Error(
+      `Unsupported WCIF version ${wcif.formatVersion} (expected ${WCIF_MAJOR_VERSION}.x)`,
+    );
+  }
+  return wcif;
 }
 
 export const EVENT_NAMES: Record<string, string> = {
@@ -63,9 +76,3 @@ export const EVENT_NAMES: Record<string, string> = {
   skewb: "Skewb",
   sq1: "Square-1",
 };
-
-export function parseRoundLabel(roundId: string): string {
-  const parts = roundId.split("-");
-  const roundNum = parts[parts.length - 1].replace("r", "");
-  return `Round ${roundNum}`;
-}

@@ -28,23 +28,36 @@ export interface Person {
     eventIds: string[];
     guests: number;
   } | null;
-  avatar?: {
+  avatar: {
     thumbUrl: string;
     url: string;
-  };
+  } | null;
+}
+
+// Centiseconds for timed events; 0 = skipped, -1 = DNF, -2 = DNS.
+export type ResultValue = number;
+
+export interface Attempt {
+  value: ResultValue;
+  reconstruction: string | null;
 }
 
 export interface RoundResult {
   personId: number;
   ranking: number | null;
-  attempts: unknown[];
-  best: number;
-  average: number;
+  attempts: Attempt[];
+  best: ResultValue;
+  average: ResultValue;
 }
+
+// '5' = best of 5 (WCIF 1.1), 'h' = head-to-head (WCIF 2.0).
+export type RoundFormat = '1' | '2' | '3' | '5' | 'a' | 'm' | 'h';
 
 export interface Round {
   id: string;
-  format: string;
+  format: RoundFormat;
+  // Rounds forming one dual round (Regulation 9v), including this one; null otherwise.
+  linkedRounds: string[] | null;
   results: RoundResult[];
 }
 
@@ -54,6 +67,7 @@ export interface WCAEvent {
 }
 
 export interface WCIF {
+  formatVersion: string;
   id: string;
   name: string;
   shortName: string;

@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DrawWheel from '../components/DrawWheel';
 import WinnersList from '../components/WinnersList';
 import SettingsModal from '../components/SettingsModal';
-import { getWCIF, EVENT_NAMES, parseRoundLabel } from '../logic/wca';
+import { getWCIF, EVENT_NAMES } from '../logic/wca';
+import { countCompetitors, eligibleRegistrantIds, groupRounds, isAverageBased } from '../logic/rounds';
 import { getToken } from '../logic/auth';
 import {
   getWinners,
@@ -68,6 +69,11 @@ export default function Giveaway() {
     [wcif, selectedEventId]
   );
 
+  const roundOptions = useMemo(
+    () => groupRounds(selectedEvent?.rounds ?? []),
+    [selectedEvent]
+  );
+
   const filteredCandidates = useMemo(() => {
     let pool = acceptedPersons;
 
@@ -76,24 +82,12 @@ export default function Giveaway() {
     } else if (filterMode === 'event' && selectedEventId) {
       pool = pool.filter((p) => p.registration?.eventIds.includes(selectedEventId));
     } else if (filterMode === 'round' && selectedEvent) {
-      const round = selectedEvent.rounds[selectedRoundIndex];
-      if (round && round.results.length > 0) {
-        const isAvgBased = round.format === 'a' || round.format === 'm';
+      const roundGroup = roundOptions[selectedRoundIndex];
+      if (roundGroup && countCompetitors(roundGroup) > 0) {
         const thresholdCs = resultThreshold.trim() !== ''
           ? Math.round(parseFloat(resultThreshold) * 100)
           : null;
-        const eligibleIds = new Set(
-          round.results
-            .filter((r) => {
-              if (thresholdCs === null) return true;
-              if (isAvgBased) {
-                // include if: no valid average (competed but DNFed) OR average meets threshold
-                return r.average <= 0 || r.average >= thresholdCs;
-              }
-              return r.best > 0 && r.best <= thresholdCs;
-            })
-            .map((r) => r.personId)
-        );
+        const eligibleIds = eligibleRegistrantIds(roundGroup, thresholdCs);
         pool = pool.filter((p) => eligibleIds.has(p.registrantId));
       } else {
         pool = [];
@@ -101,7 +95,7 @@ export default function Giveaway() {
     }
 
     return pool.filter((p) => !winnerIds.has(p.registrantId));
-  }, [acceptedPersons, filterMode, selectedEventId, selectedEvent, selectedRoundIndex, resultThreshold, winnerIds]);
+  }, [acceptedPersons, filterMode, selectedEventId, selectedEvent, roundOptions, selectedRoundIndex, resultThreshold, winnerIds]);
 
   function handleDraw() {
     if (filteredCandidates.length === 0 || isDrawing) return;
@@ -179,8 +173,6 @@ export default function Giveaway() {
       </div>
     );
   }
-
-  const roundOptions = selectedEvent?.rounds ?? [];
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
@@ -325,19 +317,22 @@ export default function Giveaway() {
                       onChange={(e) => setSelectedRoundIndex(Number(e.target.value))}
                       className="px-2 py-1.5 text-sm rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:border-blue-500"
                     >
-                      {roundOptions.map((r, i) => (
-                        <option key={r.id} value={i}>
-                          {parseRoundLabel(r.id)}
-                          {r.results.length > 0 ? ` (${r.results.length})` : ' (no results)'}
-                        </option>
-                      ))}
+                      {roundOptions.map((group, i) => {
+                        const competitors = countCompetitors(group);
+                        return (
+                          <option key={group.id} value={i}>
+                            {group.label}
+                            {competitors > 0 ? ` (${competitors})` : ' (no results)'}
+                          </option>
+                        );
+                      })}
                     </select>
                   )}
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-slate-500">
                       {(() => {
-                        const fmt = selectedEvent?.rounds[selectedRoundIndex]?.format ?? '';
-                        return (fmt === 'a' || fmt === 'm') ? 'Average ≥' : 'Best single ≤';
+                        const fmt = roundOptions[selectedRoundIndex]?.format;
+                        return fmt && isAverageBased(fmt) ? 'Average ≥' : 'Best single ≤';
                       })()} (seconds)
                     </label>
                     <input
